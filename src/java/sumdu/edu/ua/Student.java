@@ -2,7 +2,7 @@
 package sumdu.edu.ua;
 
 /**
- *
+ * Describe Student 
  * @author HP
  */
 
@@ -15,6 +15,15 @@ public class Student {
     private String faculty;
 
     public Student(String name, String surname, String age, String email, String group, String faculty) {
+        if(name == null){
+            throw new IllegalArgumentException("Name can't be null");
+        }
+        if(surname == null){
+            throw new IllegalArgumentException("Surname can't be null");
+        }
+        if(age == null){
+            throw new IllegalArgumentException("Age can't be null");
+        }
         this.name = name;
         this.surname = surname;
         this.age = age;
