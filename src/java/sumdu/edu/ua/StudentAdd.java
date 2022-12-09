@@ -4,22 +4,27 @@
  */
 package sumdu.edu.ua;
 
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.PreparedStatement;
+import com.mysql.jdbc.Statement;
 import java.io.IOException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.annotation.WebServlet;
+import java.io.PrintWriter;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
-
 /**
- * Realize the adding of User 
+ * Implementation of the User adding
  * @author HP
  */
-@WebServlet(name = "StudentAdd", urlPatterns = {"/StudentAdd"})
+@WebServlet(name = "Default", urlPatterns = {"/"},loadOnStartup=1)
 public class StudentAdd extends HttpServlet {
 
     /**
@@ -33,28 +38,79 @@ public class StudentAdd extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        List<Student> students = (List<Student>) session.getAttribute("students");
+        PrintWriter printWriter = null;
+        // initialize printWriter to get data from server response 
+        try{
+            printWriter = response.getWriter();
+            Class.forName("com.mysql.jdbc.Driver");
+        }catch (ClassNotFoundException ex) {
+            ex.printStackTrace(printWriter);
+            printWriter.print(ex.getMessage());
+        }
         
-
-        if(students == null){
-            students = new LinkedList<Student>();
-            session.setAttribute("students",students); 
-        }
-        if(!"".equals(request.getParameter("name")) && !"".equals(request.getParameter("surname"))
+        // connect to mysql db 
+        Connection conn = null;
+        try {
+            conn = (Connection) DriverManager.getConnection("jdbc:mysql://localhost:3311/university","root","root");
+            
+            // check if user name and surname aren't empty or null
+            // and age is parsable to int
+            
+            if(!"".equals(request.getParameter("name")) && !"".equals(request.getParameter("surname"))
                 && isValidAge(request.getParameter("age"))){
-            Student student = new Student(
-                    request.getParameter("name"),
-                    request.getParameter("surname"),
-                    request.getParameter("age"),
-                    request.getParameter("email"),
-                    request.getParameter("group"),
-                    request.getParameter("faculty")
-            );
-            students.add(student);
+                
+                //insert into db new user's data 
+                String query="INSERT INTO Student(name, surname, age, email, group_, faculty)VALUES(?, ?, ?, ?, ?, ?)";
+                PreparedStatement ps = (PreparedStatement) conn.prepareStatement(
+                        query
+                );
+                
+                ps.setString(1,request.getParameter("name"));
+                ps.setString(2,request.getParameter("surname"));
+                ps.setInt(3,Integer.parseInt(request.getParameter("age")));
+                ps.setString(4,request.getParameter("email"));
+                ps.setString(5,request.getParameter("group"));
+                ps.setString(6,request.getParameter("faculty"));
+                // update db so new data could be saved  
+                ps.executeUpdate();
+                // reload the web page 
+                response.sendRedirect("./");
+            }
+
+            // Select all users from DB 
+            Statement s = (Statement) conn.createStatement();
+            ResultSet resultSet = s.executeQuery("Select * From Student");
+
+            List<Student> students = new LinkedList<>();
+            // get data from db and add it to the list 'students'
+            while(resultSet.next()){
+                Student student = new Student(
+                        resultSet.getString(2),resultSet.getString(3),
+                        resultSet.getInt(4),resultSet.getString(5),
+                        resultSet.getString(6),resultSet.getString(7)
+                );
+                students.add(student);
+            }
+            // set list as an attribute 'students' on jsp 
+            request.setAttribute("students",students);
+            request.getRequestDispatcher("view.jsp").forward(request,response);
+        } catch (SQLException ex) {
+            printWriter.print(ex.getMessage());
+            ex.printStackTrace();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }finally{
+            // close connection
+            if (conn != null){
+                try{
+                    conn.close();
+                } catch (SQLException ex) {
+                    ex.getMessage();
+                }
+            }
         }
-        response.sendRedirect("index.jsp");
-    }
+           
+    }   
     // Check if the age is string contains the integer and it's integer is in range for age 
     private boolean isValidAge(String strNum) {
     if (strNum == null) {

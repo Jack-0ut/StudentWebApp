@@ -9,20 +9,20 @@ package sumdu.edu.ua;
 public class Student {
     private String name;
     private String surname;
-    private String age;
+    private int age;
     private String email;
     private String group;
     private String faculty;
 
-    public Student(String name, String surname, String age, String email, String group, String faculty) {
+    public Student(String name, String surname, int age, String email, String group, String faculty) {
         if(name == null){
             throw new IllegalArgumentException("Name can't be null");
         }
         if(surname == null){
             throw new IllegalArgumentException("Surname can't be null");
         }
-        if(age == null){
-            throw new IllegalArgumentException("Age can't be null");
+        if(age < 15 || age > 50){
+            throw new IllegalArgumentException("Age out of range [0;150]");
         }
         this.name = name;
         this.surname = surname;
@@ -64,14 +64,14 @@ public class Student {
     /**
      * @return the age
      */
-    public String getAge() {
+    public int getAge() {
         return age;
     }
 
     /**
      * @param age the age to set
      */
-    public void setAge(String age) {
+    public void setAge(int age) {
         this.age = age;
     }
 
